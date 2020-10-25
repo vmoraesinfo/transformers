@@ -1,21 +1,27 @@
 package com.test.aequilibrium.Controller;
 
 import com.test.aequilibrium.Persistence.TransformerRepository;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
-@RunWith(SpringRunner.class)
 @WebMvcTest
 @AutoConfigureMockMvc
 public class TransformerControllerTest {
@@ -31,8 +37,22 @@ public class TransformerControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    private static Stream multiFieldTest(){
+        return Stream.of(
+                Arguments.of(Arrays.asList("strength")),
+                Arguments.of(Arrays.asList("strength","intelligence","speed")),
+                Arguments.of(Arrays.asList("strength","intelligence","speed","endurance")),
+                Arguments.of(Arrays.asList("strength","intelligence","speed","endurance","rank","courage", "firepower")),
+                Arguments.of(Arrays.asList("strength","intelligence","speed","endurance","rank","courage", "firepower","skill"))
+        );
+    }
+
+    private static Stream singleFieldsTest(){
+        List<String> fildsToTest = Arrays.asList("strength","intelligence","speed","endurance","rank","courage", "firepower","skill");
+        return fildsToTest.stream();
+    }
     @Test
-    public void whenPostRequestToTransformerAndValidTransformer_thenCorrectResponse() throws Exception{
+    public void whenPostRequestToTransformerAndValidTransformer_thenCorrectResponse() throws Exception {
         String transformer = new JsonBuilder()
                 .createTransformerWithFakeValues()
                 .build();
@@ -44,144 +64,86 @@ public class TransformerControllerTest {
                 .andExpect(MockMvcResultMatchers.content().string("{\"id\":0,\"strength\":20,\"intelligence\":15,\"speed\":45,\"endurance\":87,\"rank\":100,\"courage\":1,\"firepower\":31,\"skill\":66,\"overallRating\":198}"));
     }
 
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingStrength_thenExpectBadRequest() throws Exception{
+
+    @ParameterizedTest
+    @MethodSource("multiFieldTest")
+    public void whenPostRequestToTransformerAndMultipleFieldsMissing_thenShouldRetunBadRequest(List<String> fields) throws Exception {
         String transformer = new JsonBuilder()
                 .createTransformerWithFakeValues()
-                .removeAnElementFromJson("strength")
+                .removeMultipleElementsFromJson(fields)
                 .build();
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status","BAD_REQUEST");
+        JSONArray jsonArray = new JSONArray();
+        for(String field: fields)
+            jsonArray.put(field + " cannot be null");
+        jsonObject.put("messages", jsonArray);
         mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
                 .content(transformer)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"strength cannot be null\"]}"));
+                .andExpect(MockMvcResultMatchers.content().json(jsonObject.toString()));
     }
 
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingStrengthAndIntelligence_thenExpectBadRequest() throws Exception{
+    @ParameterizedTest
+    @MethodSource("singleFieldsTest")
+    public void whenPostRequestToTransformerAndSngleFieldMissing_thenShouldRetunBadRequest(String field) throws Exception {
         String transformer = new JsonBuilder()
                 .createTransformerWithFakeValues()
-                .removeAnElementFromJson("strength")
-                .removeAnElementFromJson("intelligence")
+                .removeAnElementFromJson(field)
                 .build();
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status","BAD_REQUEST");
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.put(field + " cannot be null");
+        jsonObject.put("messages", jsonArray);
         mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
                 .content(transformer)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"intelligence cannot be null\",\"strength cannot be null\"]}"));
+                .andExpect(MockMvcResultMatchers.content().json(jsonObject.toString()));
     }
 
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingIntelligence_thenExpectBadRequest() throws Exception{
+    @ParameterizedTest
+    @MethodSource("singleFieldsTest")
+    public void whenPostRequestToTransformerAndHaveAFieldValueLowerThan1_thenShouldRetunBadRequest(String field) throws Exception {
         String transformer = new JsonBuilder()
                 .createTransformerWithFakeValues()
-                .removeAnElementFromJson("intelligence")
+                .changeKeyValue(field,-1)
                 .build();
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status","BAD_REQUEST");
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.put(field + " must be equal or greater than 1");
+        jsonObject.put("messages", jsonArray);
         mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
                 .content(transformer)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"intelligence cannot be null\"]}"));
+                .andExpect(MockMvcResultMatchers.content().json(jsonObject.toString()));
     }
 
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingSpeed_thenExpectBadRequest() throws Exception{
+    @ParameterizedTest
+    @MethodSource("singleFieldsTest")
+    public void whenPostRequestToTransformerAndHaveAFieldValueGreaterThan100_thenShouldRetunBadRequest(String field) throws Exception {
         String transformer = new JsonBuilder()
                 .createTransformerWithFakeValues()
-                .removeAnElementFromJson("speed")
+                .changeKeyValue(field,101)
                 .build();
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status","BAD_REQUEST");
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.put(field + " must be equal or less than 100");
+        jsonObject.put("messages", jsonArray);
         mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
                 .content(transformer)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"speed cannot be null\"]}"));
+                .andExpect(MockMvcResultMatchers.content().json(jsonObject.toString()));
     }
 
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingEndurance_thenExpectBadRequest() throws Exception{
-        String transformer = new JsonBuilder()
-                .createTransformerWithFakeValues()
-                .removeAnElementFromJson("endurance")
-                .build();
-        mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
-                .content(transformer)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"endurance cannot be null\"]}"));
-    }
-
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingRank_thenExpectBadRequest() throws Exception{
-        String transformer = new JsonBuilder()
-                .createTransformerWithFakeValues()
-                .removeAnElementFromJson("rank")
-                .build();
-        mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
-                .content(transformer)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"rank cannot be null\"]}"));
-    }
-
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingCourage_thenExpectBadRequest() throws Exception{
-        String transformer = new JsonBuilder()
-                .createTransformerWithFakeValues()
-                .removeAnElementFromJson("courage")
-                .build();
-        mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
-                .content(transformer)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"courage cannot be null\"]}"));
-    }
-
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingFirePower_thenExpectBadRequest() throws Exception{
-        String transformer = new JsonBuilder()
-                .createTransformerWithFakeValues()
-                .removeAnElementFromJson("firepower")
-                .build();
-        mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
-                .content(transformer)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"firepower cannot be null\"]}"));
-    }
-
-    @Test
-    public void whenPostRequestToTransformerAndNoValidTransformerMissingSkill_thenExpectBadRequest() throws Exception{
-        String transformer = new JsonBuilder()
-                .createTransformerWithFakeValues()
-                .removeAnElementFromJson("skill")
-                .build();
-        mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
-                .content(transformer)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"skill cannot be null\"]}"));
-    }
-
-    @Test
-    public void whenPostRequestToTransformerAndNotValidTransformerSkillLowerThan1_thenExpectBadRequest() throws Exception{
-        String transformer = new JsonBuilder()
-                .createTransformerWithFakeValues()
-                .addOrChangeKeyValue("skill",-1)
-                .build();
-        mockMvc.perform(MockMvcRequestBuilders.post("/transformer")
-                .content(transformer)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().string("{\"status\":\"BAD_REQUEST\",\"messages\":[\"skill must be equal or greater than 1\"]}"));
-    }
 }

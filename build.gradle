@@ -29,8 +29,9 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
-	testCompile 'org.powermock:powermock:1.6.5'
-	testCompile 'junit:junit:4.12'
+	testCompile ('org.powermock:powermock:1.6.5') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
 
 }
 

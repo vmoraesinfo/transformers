@@ -3,6 +3,8 @@ package com.test.aequilibrium.Controller;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
+
 public class JsonBuilder {
 
     private static JSONObject jsonObject;
@@ -11,7 +13,7 @@ public class JsonBuilder {
         jsonObject = new JSONObject();
     }
 
-    public JsonBuilder addOrChangeKeyValue(String key, Object value) throws JSONException {
+    public JsonBuilder changeKeyValue(String key, Object value) throws JSONException {
         jsonObject.put(key, value);
         return this;
     }
@@ -35,6 +37,13 @@ public class JsonBuilder {
 
     public JsonBuilder removeAnElementFromJson(String key) {
         jsonObject.remove(key);
+        return this;
+    }
+
+    public JsonBuilder removeMultipleElementsFromJson(List<String> keys) {
+        for(String key: keys) {
+            jsonObject.remove(key);
+        }
         return this;
     }
 
