@@ -10,17 +10,25 @@ import javax.persistence.Table;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import java.lang.reflect.Method;
 
 @Entity
-@Table(name = "TRANSFORMERS")
-public class Transformer {
+public class Transformer<T> {
 
     @Getter
     @Setter
     @Id
     @GeneratedValue
     private int id;
+
+    @NotNull
+    @Getter
+    @Setter
+    private String name;
+
+    @NotNull
+    @Getter
+    @Setter
+    private String type;
 
     @Setter
     @Getter
@@ -78,6 +86,23 @@ public class Transformer {
     @NotNull(message = "cannot be null")
     private Integer skill;
 
+    public Transformer(){
+
+    }
+    public Transformer(Transformer transformer) {
+        this.id = transformer.getId();
+        this.name = transformer.getName();
+        this.type = transformer.getType();
+        this.strength = transformer.getStrength();
+        this.intelligence = transformer.getIntelligence();
+        this.speed = transformer.getSpeed();
+        this.endurance = transformer.getEndurance();
+        this.rank = transformer.getRank();
+        this.courage = transformer.getCourage();
+        this.firepower = transformer.getFirepower();
+        this.skill = transformer.getSkill();
+    }
+
     public int getOverallRating(){
         return strength + intelligence + speed + endurance + firepower;
     }
@@ -86,6 +111,8 @@ public class Transformer {
         if(transformer == null){
             transformer = this;
         }else {
+            if (transformer.getName() == null) transformer.setName(this.getName());
+            if (transformer.getType() == null) transformer.setType(this.getType());
             if (transformer.getStrength() == null || transformer.getStrength() <= 0) transformer.setStrength(this.getStrength());
             if (transformer.getIntelligence() == null || transformer.getIntelligence() <= 0) transformer.setIntelligence(this.getIntelligence());
             if (transformer.getSpeed() == null || transformer.getSpeed() <= 0) transformer.setSpeed(this.getSpeed());
@@ -97,5 +124,18 @@ public class Transformer {
         }
 
         return transformer;
+    }
+
+    public int diffCourage(Transformer transformer) {
+        return this.getCourage() - transformer.getCourage();
+    }
+    public int diffStrength(Transformer transformer) {
+        return this.getStrength() - transformer.getStrength();
+    }
+    public int diffSkill(Transformer transformer) {
+        return this.getSkill() - transformer.getSkill();
+    }
+    public int diffOverallRating(Transformer transformer){
+        return this.getOverallRating() - transformer.getOverallRating();
     }
 }
