@@ -1,6 +1,7 @@
 package com.test.aequilibrium.Controller;
 
 import com.test.aequilibrium.Model.Transformer;
+import com.test.aequilibrium.Model.TransformerResult;
 import com.test.aequilibrium.Persistence.TransformerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 @Service
 public class TransformerService {
     private TransformerRepository transformerRepository;
+
 
     @Autowired
     public TransformerService(TransformerRepository transformerRepository) {
@@ -34,39 +36,13 @@ public class TransformerService {
     }
 
 
-    public void battle(List<Integer> ids) throws Exception {
+    public TransformerResult battle(List<Integer> ids) throws Exception {
         Map<String, List<Transformer>> mapTransformers =  splitInTeams(ids);
-        List<Transformer> playerAutobot = mapTransformers.get("A");
-        List<Transformer> playerDecepticon = mapTransformers.get("D");
-        Map<String, List<Transformer>> winners = new HashMap<>();
-        List<Transformer> winnersAutobot = new ArrayList<>();
-        List<Transformer> winnersDecepticon = new ArrayList<>();
-        for(int i =0; i< playerAutobot.size(); i++){
-            Transformer oponentAutobot = playerAutobot.get(i);
-            Transformer oponentDecepticon = playerDecepticon.get(i);
-            int diffCourage = oponentAutobot.diffCourage(oponentDecepticon);
-            int diffStrength = oponentAutobot.diffStrength(oponentDecepticon);
-            if(diffCourage <= -4 && diffStrength <= -3){
-                winnersDecepticon.add(oponentDecepticon);
-            }else if(diffCourage <= 4 && diffStrength <= 3){
-                winnersAutobot.add(oponentAutobot);
-            }
-            int diffSkill = oponentAutobot.diffSkill(oponentDecepticon);
-            if(diffSkill <= -3){
-                winnersDecepticon.add(oponentDecepticon);
-            }else{
-                winnersAutobot.add(oponentAutobot);
-            }
-            int diffOverallRating = oponentAutobot.diffOverallRating(oponentDecepticon);
-            if(diffOverallRating < 0 ){
-                winnersDecepticon.add(oponentDecepticon);
-            }else{
-                winnersAutobot.add(oponentAutobot);
-            }
-
-        }
-
+        BattleEngine battleEngine = new BattleEngine();
+        return battleEngine.battle(mapTransformers);
     }
+
+
 
     private Map<String, List<Transformer>> splitInTeams(List<Integer> ids) throws Exception {
         Map<String, List<Transformer>> mapTransformers = new HashMap<>();
@@ -78,7 +54,7 @@ public class TransformerService {
                 list = new ArrayList<>();
             }
             list.add(transformer);
-            list = list.stream().sorted(Comparator.comparingInt(Transformer::getRank))
+            list = list.stream().sorted((transformer1, tarTransformer2) -> tarTransformer2.getRank().compareTo(transformer1.getRank()) )
                     .collect(Collectors.toList());
             mapTransformers.put(transformer.getType(), list);
         }

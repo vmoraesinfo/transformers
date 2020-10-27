@@ -3,6 +3,7 @@ package com.test.aequilibrium.Controller;
 import com.test.aequilibrium.Model.Autobot;
 import com.test.aequilibrium.Model.Decepticon;
 import com.test.aequilibrium.Model.Transformer;
+import com.test.aequilibrium.Model.TransformerResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -72,9 +73,9 @@ public class TransformerController {
     @ResponseBody
     public ResponseEntity battle(@NotNull @Valid @RequestBody List<Integer> ids) throws Exception {
 
+        TransformerResult transformerResult = transformerService.battle(ids);
 
-
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(transformerResult);
     }
 
     private Transformer getSubTypeTransformer(Transformer transformer){
