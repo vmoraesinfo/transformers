@@ -25,19 +25,21 @@ public class BattleEngine {
         transformerResult = new TransformerResult();
         Transformer oponentAutobot;
         Transformer oponentDecepticon;
-        for(int i =0; i< playerAutobot.size(); i++){
-            if(playerDecepticon.size() == i) break;
-            oponentAutobot = playerAutobot.remove(i);
-            oponentDecepticon = playerDecepticon.remove(i);
+        while(playerAutobot.size() > 0){
+            if(playerDecepticon.size() == 0) break;
+            oponentAutobot = playerAutobot.remove(0);
+            oponentDecepticon = playerDecepticon.remove(0);
             transformerResult.addBatle();
             if(hasWinnerInSuperOponent(oponentAutobot, oponentDecepticon)
                ||hasWinnerInDiffCourageAndStrength(oponentAutobot, oponentDecepticon)
                ||hasWinnerInDiffSkill(oponentAutobot, oponentDecepticon)){
+                if(transformerResult.getWinnerTeam()!= null && transformerResult.getWinnerTeam().equals("TIE")){
+                    break;
+                }
                     continue;
             }else{
                 hasWinnerInOverallRating(oponentAutobot, oponentDecepticon);
             }
-
         }
 
         battleResult(playerAutobot, playerDecepticon);
